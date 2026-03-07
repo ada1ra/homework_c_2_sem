@@ -52,7 +52,7 @@ static int columnCounting(const char* line)
 }
 
 // Безопасное копирование строки с выделением памяти
-static char* safe_strdup(const char* src)
+static char* safeStrdup(const char* src)
 {
     if (!src)
         return NULL;
@@ -78,8 +78,8 @@ static void lineParsing(const char* line, Field* fields, int colsCount)
         next = strchr(token, ',');
         if (next)
             *next = '\0';
-        // Используем safe_strdup вместо strcpy
-        fields[col].str = safe_strdup(token);
+        // Используем safeStrdup вместо strcpy
+        fields[col].str = safeStrdup(token);
         if (fields[col].str) {
             fields[col].isNumber = isNumber(fields[col].str);
         } else {
