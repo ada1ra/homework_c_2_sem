@@ -52,8 +52,10 @@ static int columnCounting(const char* line)
 }
 
 // Безопасное копирование строки с выделением памяти
-static char* safe_strdup(const char* src) {
-    if (!src) return NULL;
+static char* safe_strdup(const char* src)
+{
+    if (!src) 
+        return NULL;
     size_t len = strlen(src);
     char* dst = (char*)malloc(len + 1);
     if (dst) {
@@ -66,7 +68,8 @@ static char* safe_strdup(const char* src) {
 static void lineParsing(const char* line, Field* fields, int colsCount)
 {
     char* lineCopy = strdup(line);
-    if (!lineCopy) return;
+    if (!lineCopy) 
+        return;
 
     char* token = lineCopy;
     char* next;
@@ -146,7 +149,8 @@ Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
 int* maxColWidthFinding(const Row* rows, int rowsCount, int colsCount)
 {
     int* maxWidth = (int*)malloc(colsCount * sizeof(int));
-    if (!maxWidth) return NULL;
+    if (!maxWidth) 
+        return NULL;
     for (int j = 0; j < colsCount; j++) {
         maxWidth[j] = 0;
         for (int i = 0; i < rowsCount; i++) {
@@ -216,7 +220,8 @@ void printTable(const Row* rows, int rowsCount, int colsCount, const int* maxWid
 // Освобождение памяти
 void freeRows(Row* rows, int rowsCount, int colsCount)
 {
-    if (!rows) return;
+    if (!rows) 
+        return;
     for (int i = 0; i < rowsCount; i++) {
         for (int j = 0; j < colsCount; j++)
             free(rows[i].fields[j].str);
@@ -224,3 +229,4 @@ void freeRows(Row* rows, int rowsCount, int colsCount)
     }
     free(rows);
 }
+
