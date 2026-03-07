@@ -1,8 +1,8 @@
+#include "hw_1_csv.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "hw_1_csv.h"
 
 #define MAX_LINE 1024
 #define MAX_BUFFER 10000
@@ -54,7 +54,7 @@ static int columnCounting(const char* line)
 // Безопасное копирование строки с выделением памяти
 static char* safe_strdup(const char* src)
 {
-    if (!src) 
+    if (!src)
         return NULL;
     size_t len = strlen(src);
     char* dst = (char*)malloc(len + 1);
@@ -68,7 +68,7 @@ static char* safe_strdup(const char* src)
 static void lineParsing(const char* line, Field* fields, int colsCount)
 {
     char* lineCopy = strdup(line);
-    if (!lineCopy) 
+    if (!lineCopy)
         return;
 
     char* token = lineCopy;
@@ -149,7 +149,7 @@ Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
 int* maxColWidthFinding(const Row* rows, int rowsCount, int colsCount)
 {
     int* maxWidth = (int*)malloc(colsCount * sizeof(int));
-    if (!maxWidth) 
+    if (!maxWidth)
         return NULL;
     for (int j = 0; j < colsCount; j++) {
         maxWidth[j] = 0;
@@ -220,7 +220,7 @@ void printTable(const Row* rows, int rowsCount, int colsCount, const int* maxWid
 // Освобождение памяти
 void freeRows(Row* rows, int rowsCount, int colsCount)
 {
-    if (!rows) 
+    if (!rows)
         return;
     for (int i = 0; i < rowsCount; i++) {
         for (int j = 0; j < colsCount; j++)
@@ -229,4 +229,3 @@ void freeRows(Row* rows, int rowsCount, int colsCount)
     }
     free(rows);
 }
-
