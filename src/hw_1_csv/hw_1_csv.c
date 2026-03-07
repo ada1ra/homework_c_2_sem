@@ -1,8 +1,8 @@
-#include "hw_1_csv.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hw_1_csv.h"
 
 #define MAX_LINE 1024
 #define MAX_BUFFER 10000
@@ -51,25 +51,44 @@ static int columnCounting(const char* line)
     return cols;
 }
 
+// Безопасное копирование строки с выделением памяти
+static char* safe_strdup(const char* src) {
+    if (!src) return NULL;
+    size_t len = strlen(src);
+    char* dst = (char*)malloc(len + 1);
+    if (dst) {
+        memcpy(dst, src, len + 1);
+    }
+    return dst;
+}
+
 // Разбор одной строки
 static void lineParsing(const char* line, Field* fields, int colsCount)
 {
-    char* token = (char*)line;
+    char* lineCopy = strdup(line);
+    if (!lineCopy) return;
+
+    char* token = lineCopy;
     char* next;
     int col = 0;
     while (token && col < colsCount) {
         next = strchr(token, ',');
         if (next)
             *next = '\0';
-        fields[col].str = (char*)malloc(strlen(token) + 1);
-        strcpy(fields[col].str, token);
-        fields[col].isNumber = isNumber(fields[col].str);
+        // Используем safe_strdup вместо strcpy
+        fields[col].str = safe_strdup(token);
+        if (fields[col].str) {
+            fields[col].isNumber = isNumber(fields[col].str);
+        } else {
+            fields[col].isNumber = 0;
+        }
         col++;
         if (next)
             token = next + 1;
         else
             break;
     }
+    free(lineCopy);
 }
 
 // Разбор всего CSV-файла
@@ -95,12 +114,23 @@ Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
             colsCount = columnCounting(line);
 
         Field* fields = (Field*)malloc(colsCount * sizeof(Field));
+        if (!fields) {
+            break;
+        }
         for (int i = 0; i < colsCount; i++)
             fields[i].str = NULL;
 
         lineParsing(line, fields, colsCount);
 
-        rows = (Row*)realloc(rows, (rowsCount + 1) * sizeof(Row));
+        // Безопасный realloc
+        Row* newRows = (Row*)realloc(rows, (rowsCount + 1) * sizeof(Row));
+        if (!newRows) {
+            for (int i = 0; i < colsCount; i++)
+                free(fields[i].str);
+            free(fields);
+            break;
+        }
+        rows = newRows;
         rows[rowsCount].fields = fields;
         rows[rowsCount].fieldsCount = colsCount;
         rowsCount++;
@@ -116,12 +146,13 @@ Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
 int* maxColWidthFinding(const Row* rows, int rowsCount, int colsCount)
 {
     int* maxWidth = (int*)malloc(colsCount * sizeof(int));
+    if (!maxWidth) return NULL;
     for (int j = 0; j < colsCount; j++) {
         maxWidth[j] = 0;
         for (int i = 0; i < rowsCount; i++) {
-            int len = strlen(rows[i].fields[j].str);
-            if (len > maxWidth[j])
-                maxWidth[j] = len;
+            size_t len = strlen(rows[i].fields[j].str);
+            if (len > (size_t)maxWidth[j])
+                maxWidth[j] = (int)len;
         }
     }
     return maxWidth;
@@ -185,6 +216,7 @@ void printTable(const Row* rows, int rowsCount, int colsCount, const int* maxWid
 // Освобождение памяти
 void freeRows(Row* rows, int rowsCount, int colsCount)
 {
+    if (!rows) return;
     for (int i = 0; i < rowsCount; i++) {
         for (int j = 0; j < colsCount; j++)
             free(rows[i].fields[j].str);
