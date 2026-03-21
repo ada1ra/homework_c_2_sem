@@ -143,8 +143,10 @@ static Node* deleteNode(Node* node, const char* code)
             // Узел с двумя детьми
             Node* minNode = findMinNode(node->right);
             // Копируем данные
-            strcpy(node->code, minNode->code);
-            strcpy(node->name, minNode->name);
+            strncpy(node->code, minNode->code, sizeof(node->code) - 1);
+            node->code[sizeof(node->code) - 1] = '\0';
+            strncpy(node->name, minNode->name, sizeof(node->name) - 1);
+            node->name[sizeof(node->name) - 1] = '\0';
             // Удаляем минимальный узел из правого поддерева
             node->right = deleteNode(node->right, minNode->code);
         }
@@ -192,9 +194,10 @@ char* treeSearch(Tree* tree, const char* code)
     while (cur) {
         int cmp = strcmp(code, cur->code);
         if (cmp == 0) {
-            char* buf = malloc(strlen(cur->name) + 1);
-            if (buf)
-                strcpy(buf, cur->name);
+            size_t len = strlen(cur->name);
+            char* buf = malloc(len + 1);
+            if (buf) 
+                memcpy(buf, cur->name, len + 1);
             return buf;
         } else if (cmp < 0) {
             cur = cur->left;
