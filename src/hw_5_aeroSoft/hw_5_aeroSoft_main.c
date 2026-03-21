@@ -37,8 +37,6 @@ int main(int argc, char* argv[])
     char line[512];
     int loaded = 0;
     while (fgets(line, sizeof(line), f)) {
-        // printf("Вставляю: %s\n", line);
-        // fflush(stdout);
         line[strcspn(line, "\n")] = '\0';
         char* colon = strchr(line, ':');
         if (!colon)
@@ -62,25 +60,27 @@ int main(int argc, char* argv[])
         char cmd[16];
         char* arg = line;
         // пропускаем пробелы
-        while (*arg == ' ')
+        while (*arg == ' ') 
             arg++;
         // извлекаем команду
-        char* cmd_end = arg;
-        while (*cmd_end && *cmd_end != ' ')
-            cmd_end++;
-        int cmd_len = cmd_end - arg;
-        if (cmd_len >= sizeof(cmd))
-            cmd_len = sizeof(cmd) - 1;
-        strncpy(cmd, arg, cmd_len);
-        cmd[cmd_len] = '\0';
-        // аргумент – остаток строки
-        arg = cmd_end;
+        char* cmdEnd = arg;
+        while (*cmdEnd && *cmdEnd != ' ') 
+            cmdEnd++;
+        ptrdiff_t cmdLen = cmdEnd - arg;
+        if (cmdLen >= (ptrdiff_t)sizeof(cmd)) 
+            cmdLen = sizeof(cmd) - 1;
+        strncpy(cmd, arg, (size_t)cmdLen);
+        cmd[cmdLen] = '\0';
+        // аргумент - остаток строки
+        arg = cmdEnd;
+        while (*arg == ' ') 
+            arg++;
         while (*arg == ' ')
             arg++;
 
-        if (strcmp(cmd, "quit") == 0) {
+        if (strcmp(cmd, "quit") == 0)
             break;
-        } else if (strcmp(cmd, "find") == 0) {
+        else if (strcmp(cmd, "find") == 0) {
             if (strlen(arg) == 0) {
                 printf("Не указан код аэропорта.\n");
                 continue;
@@ -88,11 +88,12 @@ int main(int argc, char* argv[])
             char* res = treeSearch(tree, arg);
             if (strstr(res, "не найден")) {
                 printf("%s\n", res);
-            } else {
+            } 
+            else
                 printf("%s → %s\n", arg, res);
-            }
             free(res);
-        } else if (strcmp(cmd, "add") == 0) {
+        } 
+        else if (strcmp(cmd, "add") == 0) {
             char* colon = strchr(arg, ':');
             if (!colon) {
                 printf("Формат: add код:название\n");
@@ -111,7 +112,8 @@ int main(int argc, char* argv[])
             free(check);
             treeInsert(tree, code, name);
             printf("Аэропорт '%s' добавлен в базу.\n", code);
-        } else if (strcmp(cmd, "delete") == 0) {
+        } 
+        else if (strcmp(cmd, "delete") == 0) {
             if (strlen(arg) == 0) {
                 printf("Не указан код аэропорта.\n");
                 continue;
@@ -129,7 +131,8 @@ int main(int argc, char* argv[])
             free(check);
             treeRemove(tree, arg);
             printf("Аэропорт '%s' удалён из базы.\n", arg);
-        } else if (strcmp(cmd, "save") == 0) {
+        } 
+        else if (strcmp(cmd, "save") == 0) {
             FILE* out = fopen(argv[1], "w");
             if (!out) {
                 perror("Ошибка сохранения");
@@ -138,9 +141,9 @@ int main(int argc, char* argv[])
             saveNode(tree->root, out);
             fclose(out);
             printf("База сохранена.\n");
-        } else {
+        } 
+        else
             printf("Неизвестная команда. Доступны: find, add, delete, save, print, quit\n");
-        }
     }
 
     treeFree(tree);
