@@ -196,7 +196,7 @@ char* treeSearch(Tree* tree, const char* code)
         if (cmp == 0) {
             size_t len = strlen(cur->name);
             char* buf = malloc(len + 1);
-            if (buf) 
+            if (buf)
                 memcpy(buf, cur->name, len + 1);
             return buf;
         } else if (cmp < 0) {
