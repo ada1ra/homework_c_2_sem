@@ -66,8 +66,8 @@ int main(int argc, char* argv[])
         char* cmdEnd = arg;
         while (*cmdEnd && *cmdEnd != ' ')
             cmdEnd++;
-        ptrdiff_t cmdLen = cmdEnd - arg;
-        if (cmdLen >= (ptrdiff_t)sizeof(cmd))
+        size_t cmdLen = (size_t)(cmdEnd - arg);
+        if (cmdLen >= sizeof(cmd))
             cmdLen = sizeof(cmd) - 1;
         strncpy(cmd, arg, (size_t)cmdLen);
         cmd[cmdLen] = '\0';
