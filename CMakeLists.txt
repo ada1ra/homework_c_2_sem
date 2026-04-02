@@ -5,3 +5,5 @@ enable_testing()
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+
+add_subdirectory(src/hw_8_countries)
