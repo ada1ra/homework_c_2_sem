@@ -1,5 +1,5 @@
 # Создание статической библиотеки
-add_library(hw_8_countries_lib STATIC bst.c)
+add_library(hw_8_countries_lib STATIC hw_8_countries.c)
 
 # Указание заголовочного файла
 target_include_directories(hw_8_countries_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
