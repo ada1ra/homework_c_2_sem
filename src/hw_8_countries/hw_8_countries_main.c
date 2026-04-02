@@ -30,7 +30,7 @@ int main()
     for (int i = 1; i <= k; i++) {
         int cnt;
         int* cities = getStateCities(i, &cnt);
-        
+
         printf("Государство %d:", i);
         for (int j = 0; j < cnt; j++)
             printf(" %d", cities[j]);

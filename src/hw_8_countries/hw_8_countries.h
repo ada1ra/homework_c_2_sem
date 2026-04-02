@@ -9,7 +9,7 @@ void addRoad(int u, int v, int w);
 // Запуск распределения
 void runDistribution(int k, const int* capitals);
 
-// Получение указателя на массив городов государства и их количества 
+// Получение указателя на массив городов государства и их количества
 int* getStateCities(int state, int* count);
 
 // Освобождение памяти

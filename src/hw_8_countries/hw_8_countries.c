@@ -78,7 +78,7 @@ static Entry heapPop(void)
         if (best == i)
             break;
 
-            heap[i] = heap[best];
+        heap[i] = heap[best];
         i = best;
     }
     heap[i] = last;
@@ -179,8 +179,9 @@ void runDistribution(int k, const int* capitals)
     }
 }
 
-// Получение указателя на массив городов государства и их количества 
-int* getStateCities(int state, int* count) {
+// Получение указателя на массив городов государства и их количества
+int* getStateCities(int state, int* count)
+{
     if (state < 1 || state > totalStates) {
         *count = 0;
         return NULL;
