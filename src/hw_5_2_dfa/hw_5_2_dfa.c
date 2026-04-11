@@ -15,11 +15,12 @@ struct DFA {
 // Служебная функция: классифицирует символ
 static char classifyChar(char c)
 {
-    if (isdigit(c))
+    unsigned char uc = (unsigned char)c; 
+    if (isdigit(uc))
         return 'd';
     else {
-        const char* allowed = "d.E+-";
-        if (strchr(allowed, c))
+        const char* allowed = ".E+-";
+        if (strchr(allowed, uc))
             return c;
     }
     return 0;
