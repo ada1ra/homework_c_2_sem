@@ -22,3 +22,7 @@ jobs:
       - name: Lint
         run: |
           run-clang-tidy-18 -p=build
+      - name: Run tests
+        run: |
+          cd build
+          ctest -C Debug --output-on-failure
