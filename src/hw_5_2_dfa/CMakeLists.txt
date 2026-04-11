@@ -1,5 +1,5 @@
 # Создание статической библиотеки
-add_library(hw_5_2_dfa STATIC hw_5_2_dfa.c)
+add_library(hw_5_2_dfa_lib STATIC hw_5_2_dfa.c)
 
 # Указание заголовочного файла
 target_include_directories(hw_5_2_dfa_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
