@@ -15,7 +15,7 @@ struct DFA {
 // Служебная функция: классифицирует символ
 static char classifyChar(char c)
 {
-    unsigned char uc = (unsigned char)c; 
+    unsigned char uc = (unsigned char)c;
     if (isdigit(uc))
         return 'd';
     else {

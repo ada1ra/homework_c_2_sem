@@ -1,19 +1,20 @@
-#include <stdio.h>
-#include <assert.h>
 #include "hw_5_2_dfa.h"
+#include <assert.h>
+#include <stdio.h>
 
-int main() {
+int main()
+{
     // Таблица переходов (из main)
     Transition transitions[] = {
-        {0, 'd', 2}, {0, '.', 3}, {0, '-', 1},
-        {1, 'd', 2},
-        {2, 'd', 2}, {2, '.', 4}, {2, 'E', 6},
-        {3, 'd', 5},
-        {4, 'd', 5},
-        {5, 'd', 5}, {5, 'E', 6},
-        {6, 'd', 8}, {6, '+', 7}, {6, '-', 7},
-        {7, 'd', 8},
-        {8, 'd', 8}
+        { 0, 'd', 2 }, { 0, '.', 3 }, { 0, '-', 1 },
+        { 1, 'd', 2 },
+        { 2, 'd', 2 }, { 2, '.', 4 }, { 2, 'E', 6 },
+        { 3, 'd', 5 },
+        { 4, 'd', 5 },
+        { 5, 'd', 5 }, { 5, 'E', 6 },
+        { 6, 'd', 8 }, { 6, '+', 7 }, { 6, '-', 7 },
+        { 7, 'd', 8 },
+        { 8, 'd', 8 }
     };
     int transCount = sizeof(transitions) / sizeof(transitions[0]);
     int acceptingStates[] = { 2, 5, 8 };
