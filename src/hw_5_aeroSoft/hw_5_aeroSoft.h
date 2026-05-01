@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <stdbool.h>
 #pragma once
+#include <stdbool.h>
+#include <stdio.h>
 
 typedef struct Tree Tree;
 
