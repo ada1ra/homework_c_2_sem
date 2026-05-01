@@ -166,8 +166,10 @@ static Node* deleteNode(Node* node, const char* code)
             return child;
         } else {
             Node* minNode = findMin(node->right);
-            strcpy(node->code, minNode->code);
-            strcpy(node->name, minNode->name);
+            strncpy(node->code, minNode->code, sizeof(node->code) - 1);
+            node->code[sizeof(node->code) - 1] = '\0';
+            strncpy(node->name, minNode->name, sizeof(node->name) - 1);
+            node->name[sizeof(node->name) - 1] = '\0';
             node->right = deleteNode(node->right, minNode->code);
         }
     }
