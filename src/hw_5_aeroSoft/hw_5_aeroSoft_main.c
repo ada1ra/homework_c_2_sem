@@ -1,16 +1,38 @@
 #include "hw_5_aeroSoft.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Вспомогательная функция для сохранения дерева в файл
-static void saveNode(Node* node, FILE* f)
+// Пропуск пробелов в строке
+static char* skipSpaces(char* s)
 {
-    if (!node)
-        return;
-    saveNode(node->left, f);
-    fprintf(f, "%s:%s\n", node->code, node->name);
-    saveNode(node->right, f);
+    while (*s == ' ')
+        s++;
+    return s;
+}
+
+// Загрузка базы из файла
+static int loadAirports(Tree* tree, const char* filename)
+{
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        return -1;
+    }
+    char line[512];
+    int loaded = 0;
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\n")] = '\0';
+        char* colon = strchr(line, ':');
+        if (!colon)
+            continue;
+        *colon = '\0';
+        if (!(treeInsert(tree, line, colon + 1)))
+            printf("Не удалось добавить аэропорт с кодом %s.\n", line);
+        loaded++;
+    }
+    fclose(file);
+    return loaded;
 }
 
 int main(int argc, char* argv[])
@@ -26,30 +48,17 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    // Загрузка базы
-    FILE* f = fopen(argv[1], "r");
-    if (!f) {
+    int loaded = loadAirports(tree, argv[1]);
+    if (loaded < 0) {
         perror("Не удалось открыть файл");
         treeFree(tree);
         return 1;
     }
-
-    char line[512];
-    int loaded = 0;
-    while (fgets(line, sizeof(line), f)) {
-        line[strcspn(line, "\n")] = '\0';
-        char* colon = strchr(line, ':');
-        if (!colon)
-            continue;
-        *colon = '\0';
-        treeInsert(tree, line, colon + 1);
-        loaded++;
-    }
-    fclose(f);
     printf("Загружено %d аэропортов. Система готова к работе.\n", loaded);
 
-    char cmd[16], arg[256];
-    while (1) {
+    char cmd[16];
+    char line[512];
+    while (true) {
         printf("> ");
         if (!fgets(line, sizeof(line), stdin))
             break;
@@ -57,88 +66,71 @@ int main(int argc, char* argv[])
         if (strlen(line) == 0)
             continue;
 
-        char cmd[16];
-        char* arg = line;
-        // пропускаем пробелы
-        while (*arg == ' ')
-            arg++;
-        // извлекаем команду
-        char* cmdEnd = arg;
+        char* p = skipSpaces(line);
+        char* cmdEnd = p;
         while (*cmdEnd && *cmdEnd != ' ')
             cmdEnd++;
-        size_t cmdLen = (size_t)(cmdEnd - arg);
+        size_t cmdLen = (size_t)(cmdEnd - p);
         if (cmdLen >= sizeof(cmd))
             cmdLen = sizeof(cmd) - 1;
-        strncpy(cmd, arg, (size_t)cmdLen);
+        strncpy(cmd, p, cmdLen);
         cmd[cmdLen] = '\0';
-        // аргумент - остаток строки
-        arg = cmdEnd;
-        while (*arg == ' ')
-            arg++;
-        while (*arg == ' ')
-            arg++;
+        char* argStart = skipSpaces(cmdEnd);
 
-        if (strcmp(cmd, "quit") == 0)
+        if (strcmp(cmd, "quit") == 0) {
             break;
-        else if (strcmp(cmd, "find") == 0) {
-            if (strlen(arg) == 0) {
+        } else if (strcmp(cmd, "find") == 0) {
+            if (strlen(argStart) == 0) {
                 printf("Не указан код аэропорта.\n");
                 continue;
             }
-            char* res = treeSearch(tree, arg);
-            if (strstr(res, "не найден")) {
-                printf("%s\n", res);
-            } else
-                printf("%s → %s\n", arg, res);
-            free(res);
+            const char* name = treeSearch(tree, argStart);
+            if (name) {
+                printf("%s → %s\n", argStart, name);
+            } else {
+                printf("Аэропорт с кодом '%s' не найден в базе.\n", argStart);
+            }
         } else if (strcmp(cmd, "add") == 0) {
-            char* colon = strchr(arg, ':');
+            char* colon = strchr(argStart, ':');
             if (!colon) {
                 printf("Формат: add код:название\n");
                 continue;
             }
             *colon = '\0';
-            char* code = arg;
+            char* code = argStart;
             char* name = colon + 1;
-            // проверка существования
-            char* check = treeSearch(tree, code);
-            if (strstr(check, "не найден") == NULL) {
+            const char* existing = treeSearch(tree, code);
+            if (existing) {
                 printf("Аэропорт '%s' уже существует.\n", code);
-                free(check);
                 continue;
             }
-            free(check);
-            treeInsert(tree, code, name);
+            if (!(treeInsert(tree, code, name)))
+                printf("Не удалось добавить аэропорт с кодом %s.\n", line);
+
             printf("Аэропорт '%s' добавлен в базу.\n", code);
         } else if (strcmp(cmd, "delete") == 0) {
-            if (strlen(arg) == 0) {
+            if (strlen(argStart) == 0) {
                 printf("Не указан код аэропорта.\n");
                 continue;
             }
-            char* check = treeSearch(tree, arg);
-            if (!check) {
-                printf("Ошибка памяти.\n");
+            const char* existing = treeSearch(tree, argStart);
+            if (!existing) {
+                printf("Аэропорт '%s' не найден.\n", argStart);
                 continue;
             }
-            if (strstr(check, "не найден")) {
-                printf("Аэропорт '%s' не найден.\n", arg);
-                free(check);
-                continue;
-            }
-            free(check);
-            treeRemove(tree, arg);
-            printf("Аэропорт '%s' удалён из базы.\n", arg);
+            treeRemove(tree, argStart);
+            printf("Аэропорт '%s' удалён из базы.\n", argStart);
         } else if (strcmp(cmd, "save") == 0) {
             FILE* out = fopen(argv[1], "w");
             if (!out) {
                 perror("Ошибка сохранения");
                 continue;
             }
-            saveNode(tree->root, out);
+            treeSave(tree, out);   
             fclose(out);
             printf("База сохранена.\n");
         } else
-            printf("Неизвестная команда. Доступны: find, add, delete, save, print, quit\n");
+            printf("Неизвестная команда. Доступны: find, add, delete, save, quit\n");
     }
 
     treeFree(tree);

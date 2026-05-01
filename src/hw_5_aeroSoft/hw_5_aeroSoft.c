@@ -3,116 +3,145 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Структура узла
+typedef struct Node {
+    char code[4];
+    char name[512];
+    struct Node* left;
+    struct Node* right;
+    int height;
+} Node;
+
+// Структура дерева
+struct Tree {
+    Node* root;
+};
+
 // СЛУЖЕБНЫЕ ФУНКЦИИ
 
-// Создание узла
-static Node* createNode(const char* code, const char* name)
+// Поиск максимума двух чисел
+static int max(int a, int b)
 {
-    Node* newNode = malloc(sizeof(Node));
-    if (!newNode)
-        return NULL;
-    strncpy(newNode->code, code, 3);
-    newNode->code[3] = '\0';
-    strncpy(newNode->name, name, sizeof(newNode->name) - 1);
-    newNode->name[sizeof(newNode->name) - 1] = '\0';
-    newNode->height = 1;
-    newNode->left = newNode->right = NULL;
-    return newNode;
+    return a > b ? a : b;
 }
 
-// Удаление узла
-static void freeNode(Node* node)
-{
-    if (node == NULL)
-        return;
-    freeNode(node->left);
-    freeNode(node->right);
-    free(node);
-}
-
-// Нахождение высоты
-static int treeHeight(Node* node)
+// Получение высоты узла
+static int nodeHeight(Node* node)
 {
     return node ? node->height : 0;
 }
 
-// Нахождение максимума
-static int max(int a, int b)
+// Обновление высоты узла
+static void updateHeight(Node* node)
 {
-    return (a > b) ? a : b;
+    if (node)
+        node->height = 1 + max(nodeHeight(node->left), nodeHeight(node->right));
 }
 
-// Правый поворот для балансировки
-static Node* rightRotate(Node* oldRoot)
+// Малое правое вращение (RR)
+static Node* rotateRight(Node* oldRoot)
 {
-    Node* newRoot = oldRoot->left; // новый корень — левый ребёнок
-    Node* subtree = newRoot->right; // поддерево, которое перейдёт к старому корню
-
+    Node* newRoot = oldRoot->left;
+    Node* subtree = newRoot->right;
     newRoot->right = oldRoot;
     oldRoot->left = subtree;
-
-    oldRoot->height = max(treeHeight(oldRoot->left), treeHeight(oldRoot->right)) + 1;
-    newRoot->height = max(treeHeight(newRoot->left), treeHeight(newRoot->right)) + 1;
-
+    updateHeight(oldRoot);
+    updateHeight(newRoot);
     return newRoot;
 }
 
-// Левый поворот для балансировки
-static Node* leftRotate(Node* oldRoot)
+// Малое левое вращение (LL)
+static Node* rotateLeft(Node* oldRoot)
 {
-    Node* newRoot = oldRoot->right; // новый корень — правый ребёнок
-    Node* subtree = newRoot->left; // поддерево, которое перейдёт к старому корню
-
+    Node* newRoot = oldRoot->right;
+    Node* subtree = newRoot->left;
     newRoot->left = oldRoot;
     oldRoot->right = subtree;
-
-    oldRoot->height = max(treeHeight(oldRoot->left), treeHeight(oldRoot->right)) + 1;
-    newRoot->height = max(treeHeight(newRoot->left), treeHeight(newRoot->right)) + 1;
-
+    updateHeight(oldRoot);
+    updateHeight(newRoot);
     return newRoot;
+}
+
+// Балансировка после вставки
+static Node* balanceInsert(Node* node, const char* code)
+{
+    int balance = nodeHeight(node->left) - nodeHeight(node->right);
+    // LL
+    if (balance > 1 && node->left && strcmp(code, node->left->code) < 0)
+        return rotateRight(node);
+    // RR
+    if (balance < -1 && node->right && strcmp(code, node->right->code) > 0)
+        return rotateLeft(node);
+    // LR
+    if (balance > 1 && node->left && strcmp(code, node->left->code) > 0) {
+        node->left = rotateLeft(node->left);
+        return rotateRight(node);
+    }
+    // RL
+    if (balance < -1 && node->right && strcmp(code, node->right->code) < 0) {
+        node->right = rotateRight(node->right);
+        return rotateLeft(node);
+    }
+    return node;
+}
+
+// Балансировка после удаления
+static Node* balanceDelete(Node* node)
+{
+    int balance = nodeHeight(node->left) - nodeHeight(node->right);
+    // LL
+    if (balance > 1 && nodeHeight(node->left->left) >= nodeHeight(node->left->right))
+        return rotateRight(node);
+    // LR
+    if (balance > 1 && nodeHeight(node->left->left) < nodeHeight(node->left->right)) {
+        node->left = rotateLeft(node->left);
+        return rotateRight(node);
+    }
+    // RR
+    if (balance < -1 && nodeHeight(node->right->right) >= nodeHeight(node->right->left))
+        return rotateLeft(node);
+    // RL
+    if (balance < -1 && nodeHeight(node->right->right) < nodeHeight(node->right->left)) {
+        node->right = rotateRight(node->right);
+        return rotateLeft(node);
+    }
+    return node;
+}
+
+// Создание нового узла
+static Node* createNode(const char* code, const char* name)
+{
+    Node* node = (Node*)malloc(sizeof(Node));
+    if (!node)
+        return NULL;
+    strncpy(node->code, code, 3);
+    node->code[3] = '\0';
+    strncpy(node->name, name, sizeof(node->name) - 1);
+    node->name[sizeof(node->name) - 1] = '\0';
+    node->height = 1;
+    node->left = NULL;
+    node->right = NULL;
+    return node;
 }
 
 // Вставка узла
 static Node* insertNode(Node* node, const char* code, const char* name)
 {
-    if (node == NULL)
+    if (!node)
         return createNode(code, name);
-
-    int compare = strcmp(code, node->code);
-    if (compare < 0)
+    int cmp = strcmp(code, node->code);
+    if (cmp < 0)
         node->left = insertNode(node->left, code, name);
-    else if (compare > 0)
+    else if (cmp > 0)
         node->right = insertNode(node->right, code, name);
     else
-        return node; // already exist
-
-    node->height = 1 + max(treeHeight(node->left), treeHeight(node->right));
-    int balance = treeHeight(node->left) - treeHeight(node->right);
-
-    // LL
-    if (balance > 1 && node->left && strcmp(code, node->left->code) < 0)
-        return rightRotate(node);
-
-    // RR
-    if (balance < -1 && node->right && strcmp(code, node->right->code) > 0)
-        return leftRotate(node);
-
-    // LR
-    if (balance > 1 && node->left && strcmp(code, node->left->code) > 0) {
-        node->left = leftRotate(node->left);
-        return rightRotate(node);
-    }
-
-    // RL
-    if (balance < -1 && node->right && strcmp(code, node->right->code) < 0) {
-        node->right = rightRotate(node->right);
-        return leftRotate(node);
-    }
-    return node;
+        return node;
+    updateHeight(node);
+    return balanceInsert(node, code);
 }
 
-// Нахождение минимального узла
-static Node* findMinNode(Node* node)
+// Поиск минимального узла в поддереве
+static Node* findMin(Node* node)
 {
     while (node && node->left)
         node = node->left;
@@ -122,100 +151,111 @@ static Node* findMinNode(Node* node)
 // Удаление узла
 static Node* deleteNode(Node* node, const char* code)
 {
-    if (node == NULL)
+    if (!node)
         return NULL;
-
-    int compare = strcmp(code, node->code);
-    if (compare < 0)
+    int cmp = strcmp(code, node->code);
+    if (cmp < 0)
         node->left = deleteNode(node->left, code);
-    if (compare > 0)
+    else if (cmp > 0)
         node->right = deleteNode(node->right, code);
     else {
-        if (node->left == NULL) {
-            Node* rightChild = node->right;
+        if (!node->left || !node->right) {
+            Node* child = node->left ? node->left : node->right;
             free(node);
-            return rightChild;
-        } else if (node->right == NULL) {
-            Node* leftChild = node->left;
-            free(node);
-            return leftChild;
+            return child;
         } else {
-            // Узел с двумя детьми
-            Node* minNode = findMinNode(node->right);
-            // Копируем данные
-            strncpy(node->code, minNode->code, sizeof(node->code) - 1);
-            node->code[sizeof(node->code) - 1] = '\0';
-            strncpy(node->name, minNode->name, sizeof(node->name) - 1);
-            node->name[sizeof(node->name) - 1] = '\0';
-            // Удаляем минимальный узел из правого поддерева
+            Node* minNode = findMin(node->right);
+            strcpy(node->code, minNode->code);
+            strcpy(node->name, minNode->name);
             node->right = deleteNode(node->right, minNode->code);
         }
     }
+    updateHeight(node);
+    return balanceDelete(node);
+}
 
-    // Обновляем высоту
-    node->height = 1 + max(treeHeight(node->left), treeHeight(node->right));
-    int balance = treeHeight(node->left) - treeHeight(node->right);
+// Печать узла
+static void printNode(Node* node)
+{
+    if (!node)
+        return;
+    printf("%s : %s\n", node->code, node->name);
+    printNode(node->left);
+    printNode(node->right);
+}
 
-    // LL
-    if (balance > 1 && node->left && treeHeight(node->left->left) >= treeHeight(node->left->right))
-        return rightRotate(node);
+// Печать дерева
+static void treePrint(Tree* tree)
+{
+    if (tree)
+        printNode(tree->root);
+}
 
-    // LR
-    if (balance > 1 && node->left && treeHeight(node->left->left) < treeHeight(node->left->right)) {
-        node->left = leftRotate(node->left);
-        return rightRotate(node);
-    }
+// Освобождение узлов
+static void freeNodes(Node* node)
+{
+    if (!node)
+        return;
+    freeNodes(node->left);
+    freeNodes(node->right);
+    free(node);
+}
 
-    // RR
-    if (balance < -1 && node->right && treeHeight(node->right->right) >= treeHeight(node->right->left))
-        return leftRotate(node);
-
-    // RL
-    if (balance < -1 && node->right && treeHeight(node->right->right) < treeHeight(node->right->left)) {
-        node->right = rightRotate(node->right);
-        return leftRotate(node);
-    }
-
-    return node;
+// Сохранение узла
+static void saveNode(const Node* node, FILE* f)
+{
+    if (!node)
+        return;
+    saveNode(node->left, f);
+    fprintf(f, "%s:%s\n", node->code, node->name);
+    saveNode(node->right, f);
 }
 
 // ПОЛЬЗОВАТЕЛЬСКИЕ ФУНКЦИИ
 
-// Поиск записи
-char* treeSearch(Tree* tree, const char* code)
+// Создание дерева
+Tree* createTree(void)
 {
-    if (!tree) {
-        char* buf = malloc(150);
-        if (buf)
-            sprintf(buf, "Аэропорт с кодом '%s' не найден в базе.", code);
-        return buf;
+    return calloc(1, sizeof(Tree));
+}
+
+// Удаление дерева
+void treeFree(Tree* tree)
+{
+    if (tree) {
+        freeNodes(tree->root);
+        free(tree);
     }
-    Node* cur = tree->root;
-    while (cur) {
-        int cmp = strcmp(code, cur->code);
-        if (cmp == 0) {
-            size_t len = strlen(cur->name);
-            char* buf = malloc(len + 1);
-            if (buf)
-                memcpy(buf, cur->name, len + 1);
-            return buf;
-        } else if (cmp < 0) {
-            cur = cur->left;
-        } else {
-            cur = cur->right;
-        }
-    }
-    char* buf = malloc(150);
-    if (buf)
-        sprintf(buf, "Аэропорт с кодом '%s' не найден.", code);
-    return buf;
 }
 
 // Вставка записи
-void treeInsert(Tree* tree, const char* code, const char* name)
+bool treeInsert(Tree* tree, const char* code, const char* name)
 {
-    if (tree)
+    if (tree) {
         tree->root = insertNode(tree->root, code, name);
+        return true;
+    }
+    else
+        return false;
+}
+
+// Поиск записи
+// Return: указатель на name или NULL
+const char* treeSearch(Tree* tree, const char* code)
+{
+    if (!tree)
+        return NULL;
+    Node* current = tree->root;
+    while (current) {
+        int cmp = strcmp(code, current->code);
+        if (cmp == 0)
+            return current->name;
+        if (cmp < 0)
+            current = current->left;
+        else
+            current = current->right;
+    }
+    return NULL;
 }
 
 // Удаление записи
@@ -225,21 +265,8 @@ void treeRemove(Tree* tree, const char* code)
         tree->root = deleteNode(tree->root, code);
 }
 
-// Создание дерева
-Tree* createTree(void)
+// Сохранение базы
+void treeSave(const Tree* tree, FILE* file)
 {
-    Tree* newTree = (Tree*)malloc(sizeof(Tree));
-    if (newTree) {
-        newTree->root = NULL;
-    }
-    return newTree;
-}
-
-// Удаление дерева
-void treeFree(Tree* tree)
-{
-    if (tree == NULL)
-        return;
-    freeNode(tree->root);
-    free(tree);
+    saveNode(tree->root, file);
 }
