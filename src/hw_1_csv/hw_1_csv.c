@@ -1,5 +1,6 @@
 #include "hw_1_csv.h"
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +11,7 @@
 // Поле таблицы
 typedef struct {
     char* str;
-    int isNumber;
+    bool isNumber;
 } Field;
 
 // Строка таблицы
@@ -20,32 +21,32 @@ struct Row {
 };
 
 // Проверка, является ли строка числом
-static int isNumber(const char* s)
+static bool isNumber(const char* string)
 {
-    if (*s == '-' || *s == '+')
-        s++;
-    if (!*s)
-        return 0;
+    if (*string == '-' || *string == '+')
+        string++;
+    if (!*string)
+        return false;
     int dot = 0;
-    while (*s) {
-        s++;
-        if (*s == '.') {
+    while (*string) {
+        if (*string == '.') {
             if (dot)
-                return 0;
+                return false;
             dot = 1;
         }
-        if (!isdigit(*s))
-            return 0;
+        if (!isdigit(*string))
+            return false;
     }
-    return 1;
+    string++;
+    return true;
 }
 
 // Определение количества столбцов по первой строке
-static int columnCounting(const char* line)
+static int countColumns(const char* line)
 {
     int cols = 1;
-    for (const char* p = line; *p; p++) {
-        if (*p == ',')
+    for (const char* cursor = line; *cursor; cursor++) {
+        if (*cursor == ',')
             cols++;
     }
     return cols;
@@ -65,26 +66,26 @@ static char* safeStrdup(const char* src)
 }
 
 // Разбор одной строки
-static void lineParsing(const char* line, Field* fields, int colsCount)
+static bool lineParsing(const char* line, Field* fields, int colsCount)
 {
     char* lineCopy = strdup(line);
     if (!lineCopy)
-        return;
+        return false;
 
     char* token = lineCopy;
-    char* next;
     int col = 0;
     while (token && col < colsCount) {
-        next = strchr(token, ',');
+        char* next = strchr(token, ',');
         if (next)
             *next = '\0';
-        // Используем safeStrdup вместо strcpy
         fields[col].str = safeStrdup(token);
-        if (fields[col].str) {
-            fields[col].isNumber = isNumber(fields[col].str);
-        } else {
-            fields[col].isNumber = 0;
+        if (!fields[col].str) {
+            for (int i = 0; i < col; i++)
+                free(fields[i].str);
+            free(lineCopy);
+            return false;
         }
+        fields[col].isNumber = isNumber(fields[col].str);
         col++;
         if (next)
             token = next + 1;
@@ -92,16 +93,28 @@ static void lineParsing(const char* line, Field* fields, int colsCount)
             break;
     }
     free(lineCopy);
+    return true;
+}
+
+// Освобождение памяти
+void freeRows(Row* rows, int rowsCount, int colsCount)
+{
+    if (!rows)
+        return;
+    for (int i = 0; i < rowsCount; i++) {
+        for (int j = 0; j < colsCount; j++)
+            free(rows[i].fields[j].str);
+        free(rows[i].fields);
+    }
+    free(rows);
 }
 
 // Разбор всего CSV-файла
 Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
 {
     FILE* inputFile = fopen(filename, "r");
-    if (!inputFile) {
-        printf("Can't open input.csv\n");
+    if (!inputFile)
         return NULL;
-    }
 
     Row* rows = NULL;
     char line[MAX_LINE];
@@ -114,16 +127,18 @@ Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
             line[len - 1] = '\0';
 
         if (colsCount == -1)
-            colsCount = columnCounting(line);
+            colsCount = countColumns(line);
 
         Field* fields = (Field*)malloc(colsCount * sizeof(Field));
-        if (!fields) {
+        if (!fields)
             break;
-        }
         for (int i = 0; i < colsCount; i++)
             fields[i].str = NULL;
 
-        lineParsing(line, fields, colsCount);
+        if (!lineParsing(line, fields, colsCount)) {
+            free(fields);
+            break;
+        }
 
         // Безопасный realloc
         Row* newRows = (Row*)realloc(rows, (rowsCount + 1) * sizeof(Row));
@@ -131,6 +146,8 @@ Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
             for (int i = 0; i < colsCount; i++)
                 free(fields[i].str);
             free(fields);
+            freeRows(rows, rowsCount, colsCount);
+            rows = NULL;
             break;
         }
         rows = newRows;
@@ -182,16 +199,12 @@ void printTable(const Row* rows, int rowsCount, int colsCount, const int* maxWid
 
     // Буфер для формирования строки таблицы
     char buffer[MAX_BUFFER];
-    char* p;
-
-    // Заголовок
-    p = buffer;
-    *p++ = '|';
-    for (int j = 0; j < colsCount; j++) {
-        p += sprintf(p, " %-*s |", maxWidth[j], rows[0].fields[j].str);
-    }
-    *p++ = '\n';
-    *p = '\0';
+    char* cursor = buffer;
+    *cursor++ = '|';
+    for (int j = 0; j < colsCount; j++)
+        cursor += sprintf(cursor, " %-*s |", maxWidth[j], rows[0].fields[j].str);
+    *cursor++ = '\n';
+    *cursor = '\0';
     fputs(buffer, out);
 
     // Линия после заголовка
@@ -199,33 +212,19 @@ void printTable(const Row* rows, int rowsCount, int colsCount, const int* maxWid
 
     // Данные
     for (int i = 1; i < rowsCount; i++) {
-        p = buffer;
-        *p++ = '|';
+        cursor = buffer;
+        *cursor++ = '|';
         for (int j = 0; j < colsCount; j++) {
-            if (rows[i].fields[j].isNumber) {
-                p += sprintf(p, " %*s |", maxWidth[j], rows[i].fields[j].str);
-            } else {
-                p += sprintf(p, " %-*s |", maxWidth[j], rows[i].fields[j].str);
-            }
+            if (rows[i].fields[j].isNumber)
+                cursor += sprintf(cursor, " %*s |", maxWidth[j], rows[i].fields[j].str);
+            else
+                cursor += sprintf(cursor, " %-*s |", maxWidth[j], rows[i].fields[j].str);
         }
-        *p++ = '\n';
-        *p = '\0';
+        *cursor++ = '\n';
+        *cursor = '\0';
         fputs(buffer, out);
 
         // Разделитель строк данных
         printLine(out, colsCount, maxWidth, '-');
     }
-}
-
-// Освобождение памяти
-void freeRows(Row* rows, int rowsCount, int colsCount)
-{
-    if (!rows)
-        return;
-    for (int i = 0; i < rowsCount; i++) {
-        for (int j = 0; j < colsCount; j++)
-            free(rows[i].fields[j].str);
-        free(rows[i].fields);
-    }
-    free(rows);
 }
