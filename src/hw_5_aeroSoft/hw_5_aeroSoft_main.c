@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
                 perror("Ошибка сохранения");
                 continue;
             }
-            treeSave(tree, out);   
+            treeSave(tree, out);
             fclose(out);
             printf("База сохранена.\n");
         } else

@@ -234,8 +234,7 @@ bool treeInsert(Tree* tree, const char* code, const char* name)
     if (tree) {
         tree->root = insertNode(tree->root, code, name);
         return true;
-    }
-    else
+    } else
         return false;
 }
 

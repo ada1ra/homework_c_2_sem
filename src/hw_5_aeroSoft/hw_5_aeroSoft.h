@@ -20,4 +20,4 @@ const char* treeSearch(Tree* tree, const char* code);
 void treeRemove(Tree* tree, const char* code);
 
 // Сохранение базы
-void treeSave(const Tree* tree, FILE* file); 
+void treeSave(const Tree* tree, FILE* file);
