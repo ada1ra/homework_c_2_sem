@@ -64,30 +64,7 @@ static Node* rotateLeft(Node* oldRoot)
 }
 
 // Балансировка после вставки
-static Node* balanceInsert(Node* node, const char* code)
-{
-    int balance = nodeHeight(node->left) - nodeHeight(node->right);
-    // LL
-    if (balance > 1 && node->left && strcmp(code, node->left->code) < 0)
-        return rotateRight(node);
-    // RR
-    if (balance < -1 && node->right && strcmp(code, node->right->code) > 0)
-        return rotateLeft(node);
-    // LR
-    if (balance > 1 && node->left && strcmp(code, node->left->code) > 0) {
-        node->left = rotateLeft(node->left);
-        return rotateRight(node);
-    }
-    // RL
-    if (balance < -1 && node->right && strcmp(code, node->right->code) < 0) {
-        node->right = rotateRight(node->right);
-        return rotateLeft(node);
-    }
-    return node;
-}
-
-// Балансировка после удаления
-static Node* balanceDelete(Node* node)
+static Node* balanceNode(Node* node)
 {
     int balance = nodeHeight(node->left) - nodeHeight(node->right);
     // LL
@@ -138,7 +115,7 @@ static Node* insertNode(Node* node, const char* code, const char* name)
     else
         return node;
     updateHeight(node);
-    return balanceInsert(node, code);
+    return balanceNode(node);
 }
 
 // Поиск минимального узла в поддереве
@@ -174,7 +151,7 @@ static Node* deleteNode(Node* node, const char* code)
         }
     }
     updateHeight(node);
-    return balanceDelete(node);
+    return balanceNode(node);
 }
 
 // Печать узла
