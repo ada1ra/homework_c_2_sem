@@ -27,12 +27,12 @@ static bool isNumber(const char* string)
         string++;
     if (!*string)
         return false;
-    int dot = 0;
+    bool dot = false;
     while (*string) {
         if (*string == '.') {
             if (dot)
                 return false;
-            dot = 1;
+            dot = true;
         }
         if (!isdigit(*string))
             return false;
@@ -66,7 +66,7 @@ static char* safeStrdup(const char* src)
 }
 
 // Разбор одной строки
-static bool lineParsing(const char* line, Field* fields, int colsCount)
+static bool parseLine(const char* line, Field* fields, int colsCount)
 {
     char* lineCopy = strdup(line);
     if (!lineCopy)
@@ -110,7 +110,7 @@ void freeRows(Row* rows, int rowsCount, int colsCount)
 }
 
 // Разбор всего CSV-файла
-Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
+Row* readCSV(const char* filename, int* outRowsCount, int* outColsCount)
 {
     FILE* inputFile = fopen(filename, "r");
     if (!inputFile)
@@ -135,7 +135,7 @@ Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
         for (int i = 0; i < colsCount; i++)
             fields[i].str = NULL;
 
-        if (!lineParsing(line, fields, colsCount)) {
+        if (!parseLine(line, fields, colsCount)) {
             free(fields);
             break;
         }
@@ -163,7 +163,7 @@ Row* csvReading(const char* filename, int* outRowsCount, int* outColsCount)
 }
 
 // Вычисление максимальной ширины столбца
-int* maxColWidthFinding(const Row* rows, int rowsCount, int colsCount)
+int* findMaxColWidth(const Row* rows, int rowsCount, int colsCount)
 {
     int* maxWidth = (int*)malloc(colsCount * sizeof(int));
     if (!maxWidth)

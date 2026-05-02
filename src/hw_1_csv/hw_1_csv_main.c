@@ -6,13 +6,13 @@
 int main()
 {
     int rowsCount, colsCount;
-    Row* rows = csvReading("input.csv", &rowsCount, &colsCount);
+    Row* rows = readCSV("input.csv", &rowsCount, &colsCount);
     if (!rows || rowsCount == 0) {
         printf("No data in input.csv\n");
         return 1;
     }
 
-    int* maxWidth = maxColWidthFinding(rows, rowsCount, colsCount);
+    int* maxWidth = findMaxColWidth(rows, rowsCount, colsCount);
 
     FILE* outputFile = fopen("output.txt", "w");
     if (!outputFile) {
